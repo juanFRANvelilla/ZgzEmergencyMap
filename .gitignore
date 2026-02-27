@@ -1,0 +1,52 @@
+# Entornos y variables sensibles
+.env
+*.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+ZGZEmergencyMapFront/ZGZStreetManager-front/front.env
+
+# Archivos de certificados y claves
+*.key
+*.pem
+*.keystore
+*.cer
+*.crt
+*.p12
+*.pfx
+
+# k8s secretos locales si existen
+*secrets*.yaml
+*secret*.yaml
+
+# IDE y Editores
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Node/Angular Front-end
+node_modules/
+dist/
+tmp/
+out-tsc/
+bazel-out/
+.angular/
+
+# Java Spring Boot Back-end
+target/
+*.class
+*.jar
+*.war
+*.ear
+.mvn/
+
+# macOS
+.DS_Store

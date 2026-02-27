@@ -1,0 +1,115 @@
+<div class="my-container">
+  <div class="row-container">
+    <!-- Checkbox para filtrar incidentes en curso -->
+    <div class="left-position" id="checkbox" [style.visibility]="showCheckbox ? 'visible' : 'hidden'">
+      <label class="switch">
+        <input 
+          type="checkbox" 
+          id="toggle-checkbox" 
+          [(ngModel)]="showOnlyOpen"
+          (change)="onToggleOpenIncidents()"
+        />
+        <span class="slider"></span>
+      </label>
+      <label for="toggle-checkbox" class="form-check-label toggle-label">En curso</label>
+    </div>
+
+    <!-- Espaciador para centrar el selector de fecha -->
+    <div style="flex: 1;"></div>
+
+    <!-- Selector de fecha -->
+    <div class="right-position">
+      <input 
+        type="date" 
+        id="datePicker" 
+        class="adjust-width"
+        [(ngModel)]="selectedDate"
+        (change)="onDateChange()"
+      />
+    </div>
+  </div>
+
+  <div style="position: relative;">
+    <!-- Mapa siempre visible -->
+    <div id="map">
+      <!-- Control de capas base estilo Google Maps -->
+      <div class="ol-control ol-unselectable layer-switcher-control">
+        <!-- Botón principal para abrir/cerrar el menú -->
+        <button 
+          class="layer-toggle-btn" 
+          (click)="toggleLayerMenu()"
+          title="Cambiar capa base"
+          [hidden]="currentIncidents.length === 0"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+          </svg>
+        </button>
+
+        <!-- Panel desplegable con las opciones -->
+        <div class="layer-menu" [class.show]="showLayerMenu">
+          <div class="layer-menu-header">
+            <span>Tipo de mapa</span>
+          </div>
+          
+          <button 
+            class="layer-option" 
+            [class.selected]="currentMapStyle === 'OSM'"
+            (click)="onStyleChange('OSM')"
+          >
+            <img src="assets/img/standar-style.png" alt="Mapa estándar">
+            <span>Estándar</span>
+            <div class="check-icon" *ngIf="currentMapStyle === 'OSM'">✓</div>
+          </button>
+
+          <button 
+            class="layer-option" 
+            [class.selected]="currentMapStyle === 'SATELLITE'"
+            (click)="onStyleChange('SATELLITE')"
+          >
+            <img src="assets/img/satellite-style.png" alt="Mapa oscuro">
+            <span>Satelite</span>
+            <div class="check-icon" *ngIf="currentMapStyle === 'DARK'">✓</div>
+          </button>
+
+          <button 
+            class="layer-option" 
+            [class.selected]="currentMapStyle === 'LIGHT'"
+            (click)="onStyleChange('LIGHT')"
+          >
+            <img src="assets/img/light-style.png" alt="Mapa claro">
+            <span>Claro</span>
+            <div class="check-icon" *ngIf="currentMapStyle === 'LIGHT'">✓</div>
+          </button>
+
+          <button 
+            class="layer-option" 
+            [class.selected]="currentMapStyle === 'DARK'"
+            (click)="onStyleChange('DARK')"
+          >
+            <img src="assets/img/dark-style.png" alt="Mapa oscuro">
+            <span>Oscuro</span>
+            <div class="check-icon" *ngIf="currentMapStyle === 'DARK'">✓</div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensaje cuando no hay incidentes (superpuesto sobre el mapa) -->
+    <div id="no-incident-overlay" *ngIf="currentIncidents.length === 0">
+      <div id="no-incident-content">
+        <img src="assets/img/notIncident.png" class="firefighter-img" alt="Sin incidentes">
+        <p id="no-incident-text">{{ noIncidentMessage }}</p>
+      </div>
+    </div>
+
+    <!-- Popup para información de incidentes -->
+    <div id="popup" class="ol-popup">
+      <div id="popup-content"></div>
+    </div>
+  </div>
+</div>
+
+
