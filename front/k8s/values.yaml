@@ -10,6 +10,8 @@ service:
 extraEnv:
 - name: "TZ"
   value: "UTC"
+- name: "API_URL"
+  value: "https://api.zgz-emergency-map.pre.danielbeltejar.es"
 extraEnvFrom:
 - secretRef:
     name: frontend-secrets
