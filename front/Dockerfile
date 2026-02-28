@@ -16,7 +16,7 @@ COPY --chown=node:node . .
 RUN npm run build
 
 # Etapa 2: Configuración de Nginx
-FROM cgr.dev/chainguard/nginx:latest
+FROM nginx:alpine
 
 USER root
 RUN apk add --no-cache vim bash
