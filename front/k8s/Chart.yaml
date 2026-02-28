@@ -1,5 +1,5 @@
 apiVersion: v2
-name: zgz-emergency-map-front
+name: front
 description: A Helm chart for ZGZEmergencyMapFront
 
 type: application
