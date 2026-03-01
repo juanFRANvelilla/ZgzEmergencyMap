@@ -28,7 +28,8 @@ COPY ./nginx.conf /etc/nginx/nginx.conf
 COPY ./entrypoint.sh /docker-entrypoint.d/99-entrypoint.sh
 
 USER root
-RUN chmod +x /docker-entrypoint.d/99-entrypoint.sh
+RUN sed -i 's/\r$//' /docker-entrypoint.d/99-entrypoint.sh && \
+    chmod +x /docker-entrypoint.d/99-entrypoint.sh
 USER nginx
 
 EXPOSE 8080
