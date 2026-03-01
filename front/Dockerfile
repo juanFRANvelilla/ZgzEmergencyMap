@@ -22,6 +22,6 @@ FROM cgr.dev/chainguard/nginx:latest
 COPY ./nginx.conf /etc/nginx/nginx.conf
 
 # Copiar los archivos compilados desde la carpeta correcta
-COPY --from=build /app/dist/emergency-map-angular /usr/share/nginx/html
+COPY --from=build /app/dist/emergency-map-angular/browser /usr/share/nginx/html
 
 EXPOSE 8080
