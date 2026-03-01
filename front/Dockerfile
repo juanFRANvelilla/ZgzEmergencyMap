@@ -16,22 +16,14 @@ COPY --chown=node:node . .
 RUN npm run build
 
 # Etapa 2: Configuración de Nginx
-FROM nginx:alpine
+FROM cgr.dev/chainguard/nginx:latest
 
-USER root
-RUN apk add --no-cache vim bash
+# Copiar los configuraciones de nginx
+COPY ./nginx.conf /etc/nginx/nginx.conf
 
-USER nginx
 # Copiar los archivos compilados desde la carpeta correcta
 COPY --from=build /app/dist/emergency-map-angular /usr/share/nginx/html
-COPY ./nginx.conf /etc/nginx/nginx.conf
-COPY ./entrypoint.sh /docker-entrypoint.d/99-entrypoint.sh
-
-USER root
-RUN sed -i 's/\r$//' /docker-entrypoint.d/99-entrypoint.sh && \
-    chmod +x /docker-entrypoint.d/99-entrypoint.sh
-USER nginx
 
 EXPOSE 8080
 
-CMD ["/bin/bash", "-c", "/docker-entrypoint.d/99-entrypoint.sh && nginx -g 'daemon off;'"]
+CMD ["nginx", "-g", "daemon off;"]

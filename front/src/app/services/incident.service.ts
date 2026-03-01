@@ -7,8 +7,8 @@ import { Incident, IncidentListResponse, IncidentModel } from '../models/inciden
   providedIn: 'root'
 })
 export class IncidentService {
-  // Backend URL configuration from env.js or default
-  private apiUrl = (window as any).__env?.API_URL || 'http://localhost:8080';
+  // Backend URL configuration - should be replaced with environments if needed
+  private apiUrl = 'https://api.zgz-emergency-map.juanfranciscoperez.es';
 
   constructor(private http: HttpClient) { }
 
