@@ -1,6 +1,6 @@
 namespace: pro-jf-zgz-emergency-map-back
 replicaCount: 2
-registry: harbor.server.local/danielbeltejar/zgz-emergency-map-backend
+registry: harbor.server.local/danielbeltejar/zgzemergencymap
 image:
   pullPolicy: IfNotPresent
 service:
