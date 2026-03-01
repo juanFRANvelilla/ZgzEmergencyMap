@@ -12,9 +12,7 @@ extraEnv:
   value: "UTC"
 - name: "API_URL"
   value: "https://api.zgz-emergency-map.juanfranciscoperez.es"
-extraEnvFrom:
-- secretRef:
-    name: frontend-secrets
+extraEnvFrom: []
 resources:
   requests:
     memory: "64Mi"
