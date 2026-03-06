@@ -348,6 +348,7 @@ input:checked + .slider:before {
 
   .row-container {
     height: 60px;
+    border-radius: 0px;
   }
 
   #map {
