@@ -29,7 +29,7 @@ public class JsonConverterServiceTest {
     @Mock
     private IncidentResourceService incidentResourceService;
     @Mock
-    private GoogleMapsService googleMapsService;
+    private GeocodingService geocodingService;
     @Mock
     private ResourceServiceImpl resourceService;
     @InjectMocks
@@ -69,7 +69,7 @@ public class JsonConverterServiceTest {
         // Mocking
         // No existe un incidente con esa fecha y hora
         when(incidentService.getIncidentByDateAndTime(any(LocalDate.class), any(LocalTime.class))).thenReturn(Optional.empty());
-        when(googleMapsService.getcoordinates(anyString())).thenReturn("{\"results\": [{\"geometry\": {\"location\": {\"lat\": 41.64659798837331, \"lng\": -0.8963747510995935}}, \"address_components\": [{\"long_name\": \"123 Test St\"}]}]}");
+        when(geocodingService.getcoordinates(anyString())).thenReturn("[{\"lat\": 41.64659798837331, \"lon\": -0.8963747510995935, \"display_name\": \"123 Test St\"}]");
         // Crear lista con 3 IncidentResource simulando que son las clases que se encuentrar al buscar en la base de datos
         List<IncidentResource> incidentResourceList = Arrays.asList(
                 new IncidentResource(),

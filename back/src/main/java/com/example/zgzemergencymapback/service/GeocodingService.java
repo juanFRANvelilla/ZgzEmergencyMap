@@ -1,5 +1,5 @@
 package com.example.zgzemergencymapback.service;
 
-public interface GoogleMapsService {
+public interface GeocodingService {
     String getcoordinates(String address);
 }

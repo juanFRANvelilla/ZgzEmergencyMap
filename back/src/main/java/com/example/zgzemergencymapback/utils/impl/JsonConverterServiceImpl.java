@@ -3,7 +3,7 @@ package com.example.zgzemergencymapback.utils.impl;
 import com.example.zgzemergencymapback.model.*;
 import com.example.zgzemergencymapback.model.incident.Incident;
 import com.example.zgzemergencymapback.model.incident.IncidentStatusEnum;
-import com.example.zgzemergencymapback.service.GoogleMapsService;
+import com.example.zgzemergencymapback.service.GeocodingService;
 import com.example.zgzemergencymapback.service.IncidentResourceService;
 import com.example.zgzemergencymapback.service.IncidentService;
 import com.example.zgzemergencymapback.service.impl.ResourceServiceImpl;
@@ -32,13 +32,10 @@ public class JsonConverterServiceImpl implements JsonConverterService {
     private IncidentService incidentService;
 
     @Autowired
-    private GoogleMapsService googleMapsService;
+    private GeocodingService geocodingService;
 
     @Autowired
     private IncidentResourceService incidentResourceService;
-
-
-
 
 
     /*
@@ -113,23 +110,23 @@ public class JsonConverterServiceImpl implements JsonConverterService {
         incident.setDuration(duration);
 
 
-        String coordinatesJsonResponse = googleMapsService.getcoordinates(address);
+        String coordinatesJsonResponse = geocodingService.getcoordinates(address);
         CoordinatesAndAddress coordinatesAndAddress = getCoordinatesFromJson(coordinatesJsonResponse);
 
         // Manejar los casos en los que la api de google maps no devuelve la direccion de calle concreta, sino una generica de zaragoza
-        if(!isAddresValid(coordinatesAndAddress)){
+        if(!isAddresValid(coordinatesAndAddress)) {
             // Volver a intntar la llamada api formateando la direccion
 
             String formattedAddress = formatAddress(address);
 
-            coordinatesJsonResponse = googleMapsService.getcoordinates(formattedAddress);
+            coordinatesJsonResponse = geocodingService.getcoordinates(formattedAddress);
             coordinatesAndAddress = getCoordinatesFromJson(coordinatesJsonResponse);
             if(!isAddresValid(coordinatesAndAddress)){
-                coordinatesJsonResponse = googleMapsService.getcoordinates("calle " + formattedAddress);
+                coordinatesJsonResponse = geocodingService.getcoordinates("calle " + formattedAddress);
                 coordinatesAndAddress = getCoordinatesFromJson(coordinatesJsonResponse);
                 if(!isAddresValid(coordinatesAndAddress)){
                     formattedAddress = formatAddress2(address);
-                    coordinatesJsonResponse = googleMapsService.getcoordinates(formattedAddress);
+                    coordinatesJsonResponse = geocodingService.getcoordinates(formattedAddress);
                     coordinatesAndAddress = getCoordinatesFromJson(coordinatesJsonResponse);
                     if(!isAddresValid(coordinatesAndAddress)){
                         System.out.println("No se ha podido obtener la direccion de la api de google maps del incidente: " + incidentType + " con direccion: " + address);
@@ -140,8 +137,6 @@ public class JsonConverterServiceImpl implements JsonConverterService {
             }
         }
         // Guardar las nuevas coordenadas en el set general para evitar tener 2 incidentes con las mismas coordenadas
-
-
         if(incidentService.getIncidentByDateAndCoordinates(
                 incident.getDate(),
                 coordinatesAndAddress.getCoordinates().get(0),
@@ -186,32 +181,47 @@ public class JsonConverterServiceImpl implements JsonConverterService {
     public static CoordinatesAndAddress getCoordinatesFromJson(String json) {
         ObjectMapper objectMapper = new ObjectMapper();
 
-        JsonNode root = null;
+        JsonNode root;
         try {
             root = objectMapper.readTree(json);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
-        JsonNode locationNode = root.path("results")
-                .path(0);
 
-        double lat = locationNode.path("geometry").path("location").path("lat").asDouble();
-        double lng = locationNode.path("geometry").path("location").path("lng").asDouble();
+        JsonNode featuresNode = root.path("features");
+        if (featuresNode.isMissingNode() || !featuresNode.isArray() || featuresNode.isEmpty()) {
+            return CoordinatesAndAddress.builder()
+                    .coordinates(Arrays.asList(0.0, 0.0))
+                    .address("")
+                    .build();
+        }
 
-        List<Double> coordinates = new ArrayList<>();
-        coordinates.add(lat);
-        coordinates.add(lng);
+        JsonNode firstFeature = featuresNode.get(0);
+        JsonNode geometry = firstFeature.path("geometry");
+        JsonNode coords = geometry.path("coordinates");
 
-        // Obtener el nombre de la direccion de la respuesta api
-        String adress = locationNode.path("address_components").path(0).path("long_name").asText();
+        // GeoJSON uses [longitude, latitude]
+        double lng = coords.path(0).asDouble();
+        double lat = coords.path(1).asDouble();
 
-        CoordinatesAndAddress coordinatesAndAddress = CoordinatesAndAddress
-                .builder()
+        List<Double> coordinates = Arrays.asList(lat, lng);
+
+        JsonNode properties = firstFeature.path("properties");
+        String address = "";
+        
+        if (properties.has("name") && !properties.path("name").asText().isEmpty()) {
+            address = properties.path("name").asText();
+        } else if (properties.has("street") && !properties.path("street").asText().isEmpty()) {
+            address = properties.path("street").asText();
+        } else {
+            // Un fallback por si no tiene 'name' ni 'street' pero sí tiene 'city' o algo, o queda vacío
+            address = properties.path("city").asText("");
+        }
+
+        return CoordinatesAndAddress.builder()
                 .coordinates(coordinates)
-                .address(adress)
+                .address(address)
                 .build();
-
-        return coordinatesAndAddress;
     }
 
 
