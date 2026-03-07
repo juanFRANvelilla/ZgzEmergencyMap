@@ -115,26 +115,7 @@ public class JsonConverterServiceImpl implements JsonConverterService {
 
         // Manejar los casos en los que la api de google maps no devuelve la direccion de calle concreta, sino una generica de zaragoza
         if(!isAddresValid(coordinatesAndAddress)) {
-            // Volver a intntar la llamada api formateando la direccion
-
-            String formattedAddress = formatAddress(address);
-
-            coordinatesJsonResponse = geocodingService.getcoordinates(formattedAddress);
-            coordinatesAndAddress = getCoordinatesFromJson(coordinatesJsonResponse);
-            if(!isAddresValid(coordinatesAndAddress)){
-                coordinatesJsonResponse = geocodingService.getcoordinates("calle " + formattedAddress);
-                coordinatesAndAddress = getCoordinatesFromJson(coordinatesJsonResponse);
-                if(!isAddresValid(coordinatesAndAddress)){
-                    formattedAddress = formatAddress2(address);
-                    coordinatesJsonResponse = geocodingService.getcoordinates(formattedAddress);
-                    coordinatesAndAddress = getCoordinatesFromJson(coordinatesJsonResponse);
-                    if(!isAddresValid(coordinatesAndAddress)){
-                        System.out.println("No se ha podido obtener la direccion de la api de google maps del incidente: " + incidentType + " con direccion: " + address);
-                        return null;
-                    }
-
-                }
-            }
+            // Agrega en base de datos la calle que no ha podido ser procesada 'address'
         }
         // Guardar las nuevas coordenadas en el set general para evitar tener 2 incidentes con las mismas coordenadas
         if(incidentService.getIncidentByDateAndCoordinates(
