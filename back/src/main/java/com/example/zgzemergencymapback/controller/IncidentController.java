@@ -19,12 +19,6 @@ public class IncidentController {
     @Autowired
     private IncidentService incidentService;
 
-    @Autowired
-    private ResourceServiceImpl resourceService;
-
-    @Autowired
-    private IncidentResourceService incidentResourceService;
-
     /*
         * Método que obtiene los datos de los incidentes abiertos y cerrados de la API del Ayuntamiento de Zaragoza
         * y devuelve aquellos incident que se han guardado o actualizado en la base de datos
@@ -47,13 +41,6 @@ public class IncidentController {
     @GetMapping("/getIncidentByDate")
     public IncidentResponseDTO getIncidentByDate(@Param("date") String date) {
         return incidentService.getIncidentByDate(date);
-    }
-
-    @GetMapping("/deleteAll")
-    public void deleteAll() {
-        incidentResourceService.deleteAllIncidentResource();
-        resourceService.deleteAllResources();
-        incidentService.deleteAllIncident();
     }
 
 }
