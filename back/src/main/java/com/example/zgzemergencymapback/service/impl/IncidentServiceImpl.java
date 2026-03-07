@@ -72,7 +72,6 @@ public class IncidentServiceImpl implements IncidentService {
     @Transactional
     public void deleteAllIncident(){
         incidentRepository.deleteAll();
-        jdbcTemplate.execute("ALTER SEQUENCE incident_id_seq RESTART WITH 1");
     }
 
     /*
@@ -86,7 +85,7 @@ public class IncidentServiceImpl implements IncidentService {
         // corresponden a los ultimos incidentes abiertos obtenidos con
         // la api buscaremos en la db aquellos incidentes abiertos que
         // no se corresponden con los ultimos obtenidos
-        List<Long> realOpenIncidentIds = new ArrayList<>();
+        List<java.util.UUID> realOpenIncidentIds = new ArrayList<>();
 
         if(openIncidentList.size() == 0){
             // En el caso que en la ultima llamada api no aparezcan incidentes abiertos se cierran todos

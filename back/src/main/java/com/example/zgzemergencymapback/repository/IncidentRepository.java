@@ -11,8 +11,9 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
-public interface IncidentRepository extends JpaRepository<Incident, Long> {
+public interface IncidentRepository extends JpaRepository<Incident, UUID> {
     @Query("SELECT i FROM Incident i WHERE i.date = :date AND i.time = :time")
     Optional<Incident> findByDateAndTime(@Param("date") LocalDate date, @Param("time") LocalTime time);
 
@@ -33,5 +34,5 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
     @Modifying
     @Transactional
     @Query("UPDATE Incident i SET i.status = 1 WHERE i.status = 0 AND i.id NOT IN :ids")
-    void closeOtherOpenIncident(@Param("ids") List<Long> ids);
+    void closeOtherOpenIncident(@Param("ids") List<UUID> ids);
 }

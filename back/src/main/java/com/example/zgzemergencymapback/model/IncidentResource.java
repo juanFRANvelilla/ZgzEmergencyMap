@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.*;
 import jakarta.persistence.*;
+import java.util.UUID;
 
 @Entity
 @Table(name = "incident_resource")
@@ -16,8 +17,8 @@ import jakarta.persistence.*;
 public class IncidentResource {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @ManyToOne
     @JoinColumn(name = "incident_id")

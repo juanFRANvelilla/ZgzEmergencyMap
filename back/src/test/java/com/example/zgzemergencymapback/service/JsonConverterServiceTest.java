@@ -69,18 +69,12 @@ public class JsonConverterServiceTest {
         // Mocking
         // No existe un incidente con esa fecha y hora
         when(incidentService.getIncidentByDateAndTime(any(LocalDate.class), any(LocalTime.class))).thenReturn(Optional.empty());
-        when(geocodingService.getcoordinates(anyString())).thenReturn("[{\"lat\": 41.64659798837331, \"lon\": -0.8963747510995935, \"display_name\": \"123 Test St\"}]");
+        // Nuevo JSON en formato Photon (GeoJSON)
+        when(geocodingService.getcoordinates(anyString())).thenReturn("{\"type\":\"FeatureCollection\",\"features\":[{\"type\":\"Feature\",\"properties\":{\"name\":\"123 Test St\"},\"geometry\":{\"type\":\"Point\",\"coordinates\":[-0.8963747510995935,41.64659798837331]}}]}");
+        
         // Crear lista con 3 IncidentResource simulando que son las clases que se encuentrar al buscar en la base de datos
-        List<IncidentResource> incidentResourceList = Arrays.asList(
-                new IncidentResource(),
-                new IncidentResource(),
-                new IncidentResource()
-        );
-
         when(incidentResourceService.findIncidentResourceByIncident(any(Incident.class)))
-                .thenReturn(incidentResourceList);
-
-
+                .thenReturn(Arrays.asList(new IncidentResource(), new IncidentResource(), new IncidentResource()));
 
         // Llamamos al método a testear
         List<Incident> result = jsonConverterService.getIncidentInfoFromJson(json, status);
@@ -93,7 +87,6 @@ public class JsonConverterServiceTest {
         assertEquals(41.64659798837331, firstIncident.getLatitude());
         assertEquals(-0.8963747510995935, firstIncident.getLongitude());
         assertEquals(status, firstIncident.getStatus());
-
 
         // LLamada a los métodos de los mocks
         verify(incidentService, times(2)).saveIncident(any(Incident.class));

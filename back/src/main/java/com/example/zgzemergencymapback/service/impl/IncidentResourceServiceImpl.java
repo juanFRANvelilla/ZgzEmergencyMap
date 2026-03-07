@@ -31,13 +31,12 @@ public class IncidentResourceServiceImpl implements IncidentResourceService {
     }
 
     public List<IncidentResource> findIncidentResourceByIncident(Incident incident) {
-        return incidentResourceRepository.findByIncident(incident);
+        return incidentResourceRepository.findIncidentResourceByIncident(incident);
     }
 
     @Transactional
     public void deleteAllIncidentResource() {
         incidentResourceRepository.deleteAll();
-        jdbcTemplate.execute("ALTER SEQUENCE incident_resource_id_seq RESTART WITH 1");
     }
 
 }

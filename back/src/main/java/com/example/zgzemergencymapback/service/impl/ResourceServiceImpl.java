@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 public class ResourceServiceImpl implements ResourceService {
     @Autowired
@@ -19,7 +21,7 @@ public class ResourceServiceImpl implements ResourceService {
     public void checkResource(String name) {
         Resource resource = resourceRepository.findByName(name);
         if (resource == null) {
-            resource = Resource.builder().name(name).build();
+            resource = Resource.builder().id(UUID.randomUUID()).name(name).build();
             resourceRepository.save(resource);
         }
     }

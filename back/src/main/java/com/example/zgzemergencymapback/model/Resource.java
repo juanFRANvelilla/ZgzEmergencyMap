@@ -5,7 +5,7 @@ import jakarta.persistence.Table;
 import lombok.*;
 import jakarta.persistence.*;
 
-import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "resource")
@@ -17,8 +17,8 @@ import java.util.List;
 public class Resource {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @Column(name = "name")
     private String name;
