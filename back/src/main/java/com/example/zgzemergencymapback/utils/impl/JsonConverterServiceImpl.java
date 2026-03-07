@@ -126,6 +126,7 @@ public class JsonConverterServiceImpl implements JsonConverterService {
                         .build();
                 unresolvedAddressRepository.save(unresolvedAddress);
             }
+            return null; // Si no es válida, la descartamos y no guardamos el incidente
         }
         // Guardar las nuevas coordenadas en el set general para evitar tener 2 incidentes con las mismas coordenadas
         if(incidentService.getIncidentByDateAndCoordinates(
