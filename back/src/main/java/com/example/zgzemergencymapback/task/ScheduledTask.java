@@ -11,7 +11,7 @@ public class ScheduledTask {
     @Autowired
     private IncidentsZgzDataServiceImpl incidentsZgzDataService;
 
-    @Scheduled(fixedRate = 120000)
+    @Scheduled(fixedRate = 1800000)
     public void executeTask() {
         System.out.println("Ejecutar tarea programada");
         incidentsZgzDataService.reloadTodayEmergency();
