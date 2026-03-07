@@ -21,6 +21,7 @@ import java.util.List;
 public class Incident {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", updatable = false, nullable = false, columnDefinition = "UUID")
     private UUID id;
 
     @Column(name = "date", nullable = false)
@@ -52,6 +53,7 @@ public class Incident {
 
     @OneToMany(mappedBy = "incident", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
+    @Builder.Default
     private List<IncidentResource> incidentResources = new ArrayList<>();
 
     public void addIncidentResource(IncidentResource incidentResource) {

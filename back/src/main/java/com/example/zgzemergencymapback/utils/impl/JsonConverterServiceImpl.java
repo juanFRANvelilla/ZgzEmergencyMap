@@ -57,7 +57,6 @@ public class JsonConverterServiceImpl implements JsonConverterService {
             String duration = node.path("duracion").asText();
 
             Incident incident = Incident.builder()
-                    .id(UUID.randomUUID())
                     .date(date)
                     .time(time)
                     .status(status)

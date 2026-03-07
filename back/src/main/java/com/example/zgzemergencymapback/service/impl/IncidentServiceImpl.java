@@ -6,7 +6,7 @@ import com.example.zgzemergencymapback.response.IncidentResponseDTO;
 import com.example.zgzemergencymapback.service.IncidentService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
+
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -21,9 +21,6 @@ import java.util.Optional;
 public class IncidentServiceImpl implements IncidentService {
     @Autowired
     private IncidentRepository incidentRepository;
-
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
 
     public Optional<Incident> getIncidentByDateAndTime(LocalDate date, LocalTime time) {
         return incidentRepository.findByDateAndTime(date, time);
