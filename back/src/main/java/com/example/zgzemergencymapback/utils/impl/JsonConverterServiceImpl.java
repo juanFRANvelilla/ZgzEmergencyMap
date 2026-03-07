@@ -37,6 +37,9 @@ public class JsonConverterServiceImpl implements JsonConverterService {
     @Autowired
     private IncidentResourceService incidentResourceService;
 
+    @Autowired
+    private com.example.zgzemergencymapback.repository.UnresolvedAddressRepository unresolvedAddressRepository;
+
 
     /*
      * Método que obtiene datos del json para crear objetos incident
@@ -116,6 +119,13 @@ public class JsonConverterServiceImpl implements JsonConverterService {
         // Manejar los casos en los que la api de google maps no devuelve la direccion de calle concreta, sino una generica de zaragoza
         if(!isAddresValid(coordinatesAndAddress)) {
             // Agrega en base de datos la calle que no ha podido ser procesada 'address'
+            Optional<UnresolvedAddress> existing = unresolvedAddressRepository.findByAddress(address);
+            if(existing.isEmpty()) {
+                UnresolvedAddress unresolvedAddress = UnresolvedAddress.builder()
+                        .address(address)
+                        .build();
+                unresolvedAddressRepository.save(unresolvedAddress);
+            }
         }
         // Guardar las nuevas coordenadas en el set general para evitar tener 2 incidentes con las mismas coordenadas
         if(incidentService.getIncidentByDateAndCoordinates(
