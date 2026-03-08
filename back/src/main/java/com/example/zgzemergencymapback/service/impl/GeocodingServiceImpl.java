@@ -27,6 +27,7 @@ public class GeocodingServiceImpl implements GeocodingService {
         if (address == null || address.isEmpty()) return "";
 
         String cleanAddress = address.toUpperCase();
+        cleanAddress = cleanAddress.replace("\"", "").replace("\\", "");
 
         // 1. Borramos explícitamente la etiqueta (ZARAGOZA)
         cleanAddress = cleanAddress.replace("(ZARAGOZA)", "");
@@ -47,11 +48,15 @@ public class GeocodingServiceImpl implements GeocodingService {
 
         // 4. Limpieza de abreviaturas
         cleanAddress = cleanAddress
-                .replaceAll("\\bPZA\\.?\\b", "PLAZA")
-                .replaceAll("\\bAVDA\\.?\\b", "AVENIDA")
-                .replaceAll("\\bAV\\.?\\b", "AVENIDA")
-                .replaceAll("\\bCL\\.?\\b", "CALLE")
-                .replaceAll("\\bFCO\\.?\\b", "FRANCISCO");
+                .replaceAll("\\bPZA\\.?\\b", "PLAZA ")
+                .replaceAll("\\bAVDA\\.?\\b", "AVENIDA ")
+                .replaceAll("\\bAV\\.?\\b", "AVENIDA ")
+                .replaceAll("\\bCL\\.?\\b", "CALLE ")
+                .replaceAll("\\bPS\\.?\\b", "PASEO ")
+                .replaceAll("\\bGL\\.?\\b", "GLORIETA ")
+                .replaceAll("\\bNTRA\\b\\.?\\s*", "NUESTRA ")
+                .replaceAll("\\bSRA\\b\\.?\\s*", "SEÑORA ")
+                .replaceAll("\\bFCO\\.?\\b", "FRANCISCO ");
 
         // 5. Detectar y extraer el tipo de vía
         String streetType = "CALLE";
@@ -61,12 +66,15 @@ public class GeocodingServiceImpl implements GeocodingService {
             streetType = "PLAZA";
         } else if (cleanAddress.matches(".*\\bPASEO\\b.*")) {
             streetType = "PASEO";
+        } else if (cleanAddress.matches(".*\\bGLORIETA\\b.*")) {
+            streetType = "GLORIETA";
         }
 
         // Suprimimos todos los tipos de vía del resto del texto para evitar duplicados como "AVENIDA... CALLE..."
         cleanAddress = cleanAddress.replaceAll("\\bAVENIDA\\b", "")
                 .replaceAll("\\bPLAZA\\b", "")
                 .replaceAll("\\bPASEO\\b", "")
+                .replaceAll("\\bGLORIETA\\b", "")
                 .replaceAll("\\bCALLE\\b", "");
 
         // 6. Construir el resultado
@@ -78,6 +86,14 @@ public class GeocodingServiceImpl implements GeocodingService {
 
         // 7. Limpiar espacios y añadir la ciudad final
         result = result.replaceAll("\\s+", " ").trim();
+
+        // Caso excepcional para Avenida de América (para que la API la localice en Zaragoza capital)
+        result = result.replace("AVENIDA DE AMERICA", "AVENIDA AMERICA");
+        if(result.contains("INDEPENDENCIA")){
+            result = "PASEO INDEPENDENCIA";
+        } else if(result.contains("CASETAS CAMINO MOLINO")){
+            result = "CALLE CAMINO MOLINO REY CASETAS";
+        }
         return result + " ZARAGOZA";
     }
 
