@@ -14,8 +14,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface IncidentRepository extends JpaRepository<Incident, UUID> {
-    @Query("SELECT i FROM Incident i WHERE i.date = :date AND i.time = :time")
-    Optional<Incident> findByDateAndTime(@Param("date") LocalDate date, @Param("time") LocalTime time);
+    @Query("SELECT i FROM Incident i WHERE i.date = :date AND i.time = :time AND i.incidentType = :incidentType")
+    Optional<Incident> findByDateAndTime(@Param("date") LocalDate date, @Param("time") LocalTime time, @Param("incidentType") String incidentType);
 
     @Query("SELECT i FROM Incident i WHERE i.date = :date AND i.latitude = :latitude AND i.longitude = :longitude")
     Optional<Incident> findIncidentByDateAndCoordinates(@Param("date") LocalDate date, @Param("latitude") Double latitude, @Param("longitude") Double longitude);

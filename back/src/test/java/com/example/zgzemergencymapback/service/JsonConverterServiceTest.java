@@ -64,11 +64,12 @@ public class JsonConverterServiceTest {
                 "  ]\n" +
                 "}";
         IncidentStatusEnum status = IncidentStatusEnum.CLOSED;
+        String typeFromJson = "Accidente de tráfico";
 
 
         // Mocking
         // No existe un incidente con esa fecha y hora
-        when(incidentService.getIncidentByDateAndTime(any(LocalDate.class), any(LocalTime.class))).thenReturn(Optional.empty());
+        when(incidentService.getIncidentByDateAndTime(any(LocalDate.class), any(LocalTime.class), eq(typeFromJson))).thenReturn(Optional.empty());
         // Nuevo JSON en formato Photon (GeoJSON)
         when(geocodingService.getcoordinates(anyString())).thenReturn("{\"type\":\"FeatureCollection\",\"features\":[{\"type\":\"Feature\",\"properties\":{\"name\":\"123 Test St\"},\"geometry\":{\"type\":\"Point\",\"coordinates\":[-0.8963747510995935,41.64659798837331]}}]}");
         
@@ -138,7 +139,7 @@ public class JsonConverterServiceTest {
 
         // Mocking
         // Si existe un incidente con esa fecha y hora, ademas esta OPEN
-        when(incidentService.getIncidentByDateAndTime(any(LocalDate.class), any(LocalTime.class))).thenReturn(Optional.of(incidentDb));
+        when(incidentService.getIncidentByDateAndTime(any(LocalDate.class), any(LocalTime.class), eq(incidentDb.getIncidentType()))).thenReturn(Optional.of(incidentDb));
         // Crear lista con 3 IncidentResource simulando que son las clases que se encuentrar al buscar en la base de datos
         List<IncidentResource> incidentResourceList = Arrays.asList(
                 new IncidentResource(),
@@ -212,7 +213,7 @@ public class JsonConverterServiceTest {
 
         // Mocking
         // Si existe un incidente con esa fecha y hora, ademas esta OPEN
-        when(incidentService.getIncidentByDateAndTime(any(LocalDate.class), any(LocalTime.class))).thenReturn(Optional.of(incidentDb));
+        when(incidentService.getIncidentByDateAndTime(any(LocalDate.class), any(LocalTime.class), eq(incidentDb.getIncidentType()))).thenReturn(Optional.of(incidentDb));
         // Crear lista con 3 IncidentResource simulando que son las clases que se encuentrar al buscar en la base de datos
         List<IncidentResource> incidentResourceList = Arrays.asList(
                 new IncidentResource(),

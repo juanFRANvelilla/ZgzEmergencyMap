@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface IncidentService {
-    Optional<Incident> getIncidentByDateAndTime(LocalDate date, LocalTime time);
+    Optional<Incident> getIncidentByDateAndTime(LocalDate date, LocalTime time, String incidentType);
 
     Optional<Incident> getIncidentByDateAndCoordinates(LocalDate date, Double latitude, Double longitude);
 

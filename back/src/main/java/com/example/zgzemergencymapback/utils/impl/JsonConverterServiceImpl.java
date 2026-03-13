@@ -53,6 +53,12 @@ public class JsonConverterServiceImpl implements JsonConverterService {
 
         List<Incident> incidentList = new ArrayList<>();
         for (JsonNode node : resultNode) {
+            String incidentType = node.path("tipoSiniestro").asText();
+            // Si la incidencia es de tipo Practicas la omitimos ya que no es una intervencion de emergencia
+            if(incidentType.contains("Prácticas")){
+                continue;
+            }
+
             String fecha = node.path("fecha").asText();
             String[] dateTime = fecha.split("T");
             LocalDate date = LocalDate.parse(dateTime[0]);
@@ -65,8 +71,8 @@ public class JsonConverterServiceImpl implements JsonConverterService {
                     .status(status)
                     .build();
 
-            Optional<Incident> incidentOptional = incidentService.getIncidentByDateAndTime(incident.getDate(), incident.getTime());
-            // Si no hay ningun incident en la base de datos con esa fecha y hora
+            Optional<Incident> incidentOptional = incidentService.getIncidentByDateAndTime(incident.getDate(), incident.getTime(), incidentType);
+            // Si no hay ningun incident en la base de datos con esa fecha, hora y tipo
             // se termina de crear el objeto y guardar en la base de datos
             if(incidentOptional.isEmpty()){
                 // Completar los datos del incidente

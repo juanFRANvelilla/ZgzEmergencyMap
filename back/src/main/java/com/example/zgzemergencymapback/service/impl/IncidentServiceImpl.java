@@ -22,8 +22,8 @@ public class IncidentServiceImpl implements IncidentService {
     @Autowired
     private IncidentRepository incidentRepository;
 
-    public Optional<Incident> getIncidentByDateAndTime(LocalDate date, LocalTime time) {
-        return incidentRepository.findByDateAndTime(date, time);
+    public Optional<Incident> getIncidentByDateAndTime(LocalDate date, LocalTime time, String incidentType) {
+        return incidentRepository.findByDateAndTime(date, time, incidentType);
     }
 
     public Optional<Incident> getIncidentByDateAndCoordinates(LocalDate date, Double latitude, Double longitude) {
