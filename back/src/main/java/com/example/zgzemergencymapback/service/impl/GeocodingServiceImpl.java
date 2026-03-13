@@ -100,6 +100,8 @@ public class GeocodingServiceImpl implements GeocodingService {
     public String getcoordinates(String address) {
         URI url = UriComponentsBuilder.fromHttpUrl("https://photon.komoot.io/api/")
                 .queryParam("q", normalizeAddress(address))
+                .queryParam("lat", 41.6488)
+                .queryParam("lon", -0.8891)
                 .queryParam("limit", "1")
                 .build()
                 .encode()
