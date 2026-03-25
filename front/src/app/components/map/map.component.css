@@ -422,7 +422,8 @@ input:checked + .slider:before {
   }
 }
 
-.attribution-toggle:hover {
+.attribution-toggle:hover,
+.attribution-content.expanded + .attribution-toggle {
   background-color: rgba(0, 0, 0, 0.04);
   color: #DC1914; /* Al poner el ratón se tiñe del rojo corporativo */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
