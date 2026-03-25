@@ -12,11 +12,14 @@ public class AdressUtils {
     private static final double LONGITUDE_OFFSET = 0.0003;
 
     static {
-        ZARAGOZA_POLYGON.moveTo(41.75731894412275, -0.8926774895802142);
-        ZARAGOZA_POLYGON.lineTo(41.6771110403174, -0.715725563529871);
-        ZARAGOZA_POLYGON.lineTo(41.5660117933122, -0.8263873420568228);
-        ZARAGOZA_POLYGON.lineTo(41.619587124136395, -1.0835289626919138);
-        ZARAGOZA_POLYGON.lineTo(41.75372968626021, -1.0445033113273365);
+        // NW (Noroeste) - Cerca de Alagón / Tauste
+        ZARAGOZA_POLYGON.moveTo(41.8500, -1.2000);
+        // NE (Noreste) - Cerca de San Mateo de Gállego / Alfajarín
+        ZARAGOZA_POLYGON.lineTo(41.8500, -0.6000);
+        // SE (Sureste) - Cerca de Fuentes de Ebro / Mediana de Aragón
+        ZARAGOZA_POLYGON.lineTo(41.4500, -0.6000);
+        // SW (Suroeste) - Cerca de La Muela / Botorrita
+        ZARAGOZA_POLYGON.lineTo(41.4500, -1.2000);
         ZARAGOZA_POLYGON.closePath();
     }
 
@@ -24,10 +27,9 @@ public class AdressUtils {
         double latitude = coordinatesAndAddress.getCoordinates().get(0);
         double longitude = coordinatesAndAddress.getCoordinates().get(1);
         return ZARAGOZA_POLYGON.contains(latitude, longitude)
-                && (coordinatesAndAddress.getCoordinates().get(0) != 41.6474339 || coordinatesAndAddress.getCoordinates().get(1) != -0.8861451);
+                && (coordinatesAndAddress.getCoordinates().get(0) != 41.6474339
+                        || coordinatesAndAddress.getCoordinates().get(1) != -0.8861451);
     }
-
-
 
     public static CoordinatesAndAddress adjustCoordinates(CoordinatesAndAddress original) {
         // Obtener las coordenadas originales
