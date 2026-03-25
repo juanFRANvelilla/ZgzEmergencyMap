@@ -384,4 +384,26 @@ input:checked + .slider:before {
   }
 }
 
+/* Overlay de atribución */
+.attribution-overlay {
+  position: fixed;
+  bottom: 15px;
+  right: 15px;
+  background-color: rgba(255, 255, 255, 0.85);
+  padding: 4px 8px;
+  font-size: 11px;
+  color: #333;
+  z-index: 9999;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
 
+.attribution-overlay a {
+  color: #0091c2;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.attribution-overlay a:hover {
+  text-decoration: underline;
+}
