@@ -384,26 +384,108 @@ input:checked + .slider:before {
   }
 }
 
-/* Overlay de atribución */
-.attribution-overlay {
+/* Contenedor fijo de la atribución */
+.attribution-container {
   position: fixed;
-  bottom: 15px;
+  bottom: 20px;
   right: 15px;
-  background-color: rgba(255, 255, 255, 0.85);
-  padding: 4px 8px;
-  font-size: 11px;
-  color: #333;
   z-index: 9999;
-  border-radius: 4px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none; /* Allows clicks to pass through empty space */
 }
 
-.attribution-overlay a {
-  color: #0091c2;
+/* Botón (i) discreto e integrado */
+.attribution-toggle {
+  pointer-events: auto;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  outline: none;
+  padding: 0;
+  background-color: rgba(0, 0, 0, 0.04);
+
+  svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+.attribution-toggle:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+  color: #DC1914; /* Al poner el ratón se tiñe del rojo corporativo */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: scale(1.05);
+}
+
+/* Etiqueta deslizable hacia la izquierda */
+.attribution-content {
+  pointer-events: auto;
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  font-size: 12px;
+  color: #555;
+  font-weight: 400;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 1px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  display: flex;
+  align-items: center;
+  cursor: default;
+  
+  /* Estados cerrado y animación */
+  max-width: 0;
+  opacity: 0;
+  padding: 8px 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: max-width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s ease, padding 0.4s ease;
+}
+
+.attribution-content.expanded {
+  max-width: 320px;
+  padding: 8px 14px;
+  opacity: 1;
+}
+
+.attribution-content a {
+  color: #DC1914;
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 700;
+  position: relative;
+  transition: filter 0.3s ease;
+  margin-left: 4px;
 }
 
-.attribution-overlay a:hover {
-  text-decoration: underline;
+.attribution-content a::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  transform: scaleX(0);
+  height: 2px;
+  bottom: -2px;
+  left: 0;
+  background-color: #DC1914;
+  transform-origin: bottom right;
+  transition: transform 0.3s ease-out;
+}
+
+.attribution-content a:hover {
+  filter: brightness(0.85);
+}
+
+.attribution-content a:hover::after {
+  transform: scaleX(1);
+  transform-origin: bottom left;
 }

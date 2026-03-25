@@ -41,6 +41,11 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   showMap: boolean = true;
   showCheckbox: boolean = false;
   noIncidentMessage: string = '';
+  showAttribution: boolean = false;
+
+  toggleAttribution(): void {
+    this.showAttribution = !this.showAttribution;
+  }
 
   constructor(private incidentService: IncidentService) {}
 
