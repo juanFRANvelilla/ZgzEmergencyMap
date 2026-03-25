@@ -134,11 +134,20 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Agregar evento de click para mostrar popup
     this.map.on('click', (event) => {
+      // Contraer menú de capas al pulsar en el mapa
+      this.showLayerMenu = false;
+
       const feature = this.map.forEachFeatureAtPixel(event.pixel, (feat) => feat);
       if (feature && this.popup) {
         const coordinates = (feature.getGeometry() as Point).getCoordinates();
         const incident = feature.get('incident') as IncidentModel;
         this.showPopup(coordinates, incident);
+        
+        // Centrar vista en el incidente clickado
+        this.map.getView().animate({
+          center: coordinates,
+          duration: 500
+        });
       } else if (this.popup) {
         this.hidePopup();
       }
@@ -165,6 +174,9 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onDateChange(): void {
+    this.hidePopup();
+    this.showLayerMenu = false;
+
     if (this.isCurrentDate(this.selectedDate)) {
       this.loadTodayIncidents();
     } else {
@@ -204,7 +216,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     // Mostrar todos los incidentes o solo los abiertos según el checkbox
     this.currentIncidents = this.showOnlyOpen ? this.filteredIncidents : this.fullIncidentList;
     console.log('Actualizando mapa con', this.currentIncidents.length, 'incidentes');
-    this.updateMap();
+    this.updateMap(true);
   }
 
   handleNoIncidents(): void {
@@ -231,7 +243,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onToggleOpenIncidents(): void {
     this.currentIncidents = this.showOnlyOpen ? this.filteredIncidents : this.fullIncidentList;
-    this.updateMap();
+    this.updateMap(true);
   }
 
   toggleLayerMenu(): void {
@@ -270,10 +282,10 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
           }));
         break;
     }
-    this.updateMap();
+    this.updateMap(false);
   }
 
-  updateMap(): void {
+  updateMap(fitView: boolean = true): void {
     const source = this.vectorLayer.getSource();
     if (!source) return;
 
@@ -301,7 +313,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     // Ajustar vista para mostrar todos los marcadores
-    if (this.currentIncidents.length > 0) {
+    if (fitView && this.currentIncidents.length > 0) {
       const extent = source.getExtent();
       this.map.getView().fit(extent, {
         padding: [50, 50, 50, 50],
