@@ -399,9 +399,10 @@ input:checked + .slider:before {
 /* Botón (i) discreto e integrado */
 .attribution-toggle {
   pointer-events: auto;
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
   width: 22px;
   height: 22px;
   border-radius: 50%;
@@ -410,11 +411,10 @@ input:checked + .slider:before {
   justify-content: center;
   cursor: pointer;
   color: #666;
-  transition: all 0.2s ease;
+  transition: all .4s ease;
   flex-shrink: 0;
   outline: none;
-  padding: 0;
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: rgba(172, 172, 172, 0.3);
 
   svg {
     width: 22px;
@@ -424,10 +424,15 @@ input:checked + .slider:before {
 
 .attribution-toggle:hover,
 .attribution-content.expanded + .attribution-toggle {
-  background-color: rgba(0, 0, 0, 0.04);
-  color: #DC1914; /* Al poner el ratón se tiñe del rojo corporativo */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transform: scale(1.05);
+  background-color: rgba(172, 172, 172, 0.3);
+  color: #DC1914;
+  box-shadow: none;
+  transform: scale(1.1);
+}
+
+.attribution-container.dark-theme .attribution-toggle {
+  background-color: transparent;
+  backdrop-filter: none;
 }
 
 /* Etiqueta deslizable hacia la izquierda */

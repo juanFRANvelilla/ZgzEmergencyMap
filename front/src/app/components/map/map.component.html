@@ -111,7 +111,7 @@
     </div>
 
     <!-- Atribución de datos -->
-    <div class="attribution-container">
+    <div class="attribution-container" [class.dark-theme]="currentMapStyle === 'DARK' || currentMapStyle === 'SATELLITE'">
       <div class="attribution-content" [class.expanded]="showAttribution">
         Datos proporcionados por el <a href="https://www.zaragoza.es" target="_blank" rel="noopener noreferrer">Ayto. de Zaragoza</a>
       </div>
