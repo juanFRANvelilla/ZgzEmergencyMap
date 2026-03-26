@@ -247,6 +247,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onToggleOpenIncidents(): void {
+    this.hidePopup();
     this.currentIncidents = this.showOnlyOpen ? this.filteredIncidents : this.fullIncidentList;
     this.updateMap(true);
   }

@@ -422,7 +422,15 @@ input:checked + .slider:before {
   }
 }
 
-.attribution-toggle:hover,
+@media (hover: hover) {
+  .attribution-toggle:hover {
+    background-color: rgba(172, 172, 172, 0.3);
+    color: #DC1914;
+    box-shadow: none;
+    transform: scale(1.1);
+  }
+}
+
 .attribution-content.expanded + .attribution-toggle {
   background-color: rgba(172, 172, 172, 0.3);
   color: #DC1914;
