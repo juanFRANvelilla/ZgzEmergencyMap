@@ -20,11 +20,13 @@
     <!-- Selector de fecha -->
     <div class="right-position">
       <input 
+        #datePickerRef
         type="date" 
         id="datePicker" 
         class="adjust-width"
         [(ngModel)]="selectedDate"
-        (change)="onDateChange()"
+        (change)="onDateChange(); datePickerRef.blur()"
+        [max]="maxDate"
       />
     </div>
   </div>

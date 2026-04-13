@@ -34,6 +34,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   currentIncidents: IncidentModel[] = [];
   
   selectedDate: string = '';
+  maxDate: string = '';
   showOnlyOpen: boolean = false;
   currentMapStyle: 'OSM' | 'LIGHT' | 'DARK' | 'SATELLITE' = 'OSM';
   showLayerMenu: boolean = false;
@@ -82,6 +83,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
     this.selectedDate = `${year}-${month}-${day}`;
+    this.maxDate = this.selectedDate;
   }
 
   initMap(): void {
