@@ -1,7 +1,6 @@
 package com.example.zgzemergencymapback.task;
 
 import com.example.zgzemergencymapback.service.impl.IncidentsZgzDataServiceImpl;
-import com.example.zgzemergencymapback.utils.JsonConverterService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -12,26 +11,14 @@ public class ScheduledTask {
     @Autowired
     private IncidentsZgzDataServiceImpl incidentsZgzDataService;
 
-    @Autowired
-    private JsonConverterService jsonConverterService;
-
+    // Nota: no hace falta un job de reintento aparte para las direcciones
+    // pendientes en unresolved_address. Mientras el incidente siga apareciendo
+    // como abierto o cerrado "hoy" en el parte de bomberos, esta misma tarea
+    // (cada 30 min) vuelve a llamar a getIncidentInfoFromJson, que comprueba
+    // que no existe en la tabla incident y reintenta geocodificarlo desde cero.
     @Scheduled(fixedRate = 1800000)
     public void executeTask() {
         System.out.println("Ejecutar tarea programada");
         incidentsZgzDataService.reloadTodayEmergency();
-    }
-
-    /*
-     * Reintenta, una vez al día, geocodificar las direcciones que se quedaron
-     * pendientes en "unresolved_address" (ver JsonConverterServiceImpl). Con esto
-     * los incidentes cuya dirección no se pudo resolver en su momento (por un
-     * fallo puntual de la API gratuita, un formato raro, etc.) se recuperan solos
-     * en cuanto la dirección se puede geocodificar, en vez de quedar perdidos
-     * para siempre.
-     */
-    @Scheduled(cron = "0 30 4 * * *")
-    public void executeRetryUnresolvedAddresses() {
-        int recovered = jsonConverterService.retryUnresolvedAddresses();
-        System.out.println("Reintento de direcciones pendientes: " + recovered + " incidentes recuperados");
     }
 }

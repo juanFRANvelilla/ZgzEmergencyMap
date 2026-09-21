@@ -14,9 +14,12 @@ import java.util.UUID;
 /*
  * Representa un incidente cuya dirección no se ha podido geocodificar todavía
  * dentro del término de Zaragoza. Guardamos TODOS los datos originales del
- * parte de bomberos (no solo la dirección) para poder reconstruir el Incident
- * completo en cuanto la dirección se resuelva en un reintento posterior, y así
- * no perder incidentes reales por un fallo puntual/temporal de geocodificación.
+ * parte de bomberos (no solo la dirección) para poder ver, sin necesidad de
+ * mirar directamente los logs, qué incidente real hay detrás de cada
+ * dirección pendiente: cuándo ocurrió, de qué tipo era, qué recursos acudieron,
+ * etc. No hay un job de reintento explícito: si el incidente sigue apareciendo
+ * como abierto o cerrado "hoy" en el parte de bomberos, el propio ScheduledTask
+ * (cada 30 min) vuelve a intentar geocodificarlo de forma natural.
  */
 @Entity
 @Table(name = "unresolved_address")
@@ -56,10 +59,6 @@ public class UnresolvedAddress {
     // Nombres de los recursos separados por "|" para poder reconstruir el incidente
     @Column(name = "resources", length = 1000)
     private String resources;
-
-    @Builder.Default
-    @Column(name = "attempts", nullable = false)
-    private Integer attempts = 0;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
