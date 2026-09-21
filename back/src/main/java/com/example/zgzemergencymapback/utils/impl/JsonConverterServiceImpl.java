@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 
@@ -118,21 +119,26 @@ public class JsonConverterServiceImpl implements JsonConverterService {
         String duration = node.path("duracion").asText();
         incident.setDuration(duration);
 
+        // Recogemos los recursos ANTES de intentar geocodificar para no perderlos
+        // si la dirección falla: los necesitamos también para reconstruir el
+        // incidente completo en el reintento posterior.
+        List<String> resourceNames = new ArrayList<>();
+        JsonNode resourcesNode = node.path("recursos");
+        for (JsonNode resourceNode : resourcesNode) {
+            resourceNames.add(resourceNode.asText());
+        }
 
         String coordinatesJsonResponse = geocodingService.getcoordinates(address);
         CoordinatesAndAddress coordinatesAndAddress = getCoordinatesFromJson(coordinatesJsonResponse);
 
-        // Manejar los casos en los que la api de google maps no devuelve la direccion de calle concreta, sino una generica de zaragoza
+        // Manejar los casos en los que la api de geocoding no devuelve la direccion de calle concreta, sino una generica de zaragoza
         if(!isAddresValid(coordinatesAndAddress)) {
-            // Agrega en base de datos la calle que no ha podido ser procesada 'address'
-            Optional<UnresolvedAddress> existing = unresolvedAddressRepository.findByAddress(address);
-            if(existing.isEmpty()) {
-                UnresolvedAddress unresolvedAddress = UnresolvedAddress.builder()
-                        .address(address)
-                        .build();
-                unresolvedAddressRepository.save(unresolvedAddress);
-            }
-            return null; // Si no es válida, la descartamos y no guardamos el incidente
+            // En vez de descartar el incidente, lo dejamos "en cola" en unresolved_address
+            // con TODOS sus datos para poder reconstruirlo en cuanto se resuelva la
+            // dirección (ver retryUnresolvedAddresses). Así ningún incidente real se
+            // pierde definitivamente por un fallo de geocoding.
+            saveOrUpdateUnresolvedAddress(address, incident, resourceNames);
+            return null; // Todavía no es válida: no lo guardamos como Incident hoy
         }
         // Guardar las nuevas coordenadas en el set general para evitar tener 2 incidentes con las mismas coordenadas
         if(incidentService.getIncidentByDateAndCoordinates(
@@ -152,13 +158,7 @@ public class JsonConverterServiceImpl implements JsonConverterService {
         address = coordinatesAndAddress.getAddress();
         incident.setAddress(address);
 
-        List<Resource> resourceList = new ArrayList<>();
-        JsonNode resourcesNode = node.path("recursos");
-        for (JsonNode resourceNode : resourcesNode) {
-            resourceService.checkResource(resourceNode.asText());
-            Resource resource = resourceService.findResourceByName(resourceNode.asText());
-            resourceList.add(resource);
-        }
+        List<Resource> resourceList = buildResourceList(resourceNames);
 
         //guardar incident sin resources para poder añadirlos después
         incidentService.saveIncident(incident);
@@ -173,6 +173,115 @@ public class JsonConverterServiceImpl implements JsonConverterService {
         incidentService.saveIncident(incident);
 
         return incident;
+    }
+
+    private List<Resource> buildResourceList(List<String> resourceNames) {
+        List<Resource> resourceList = new ArrayList<>();
+        for (String resourceName : resourceNames) {
+            resourceService.checkResource(resourceName);
+            resourceList.add(resourceService.findResourceByName(resourceName));
+        }
+        return resourceList;
+    }
+
+    private void saveOrUpdateUnresolvedAddress(String address, Incident incident, List<String> resourceNames) {
+        LocalDateTime now = LocalDateTime.now();
+        UnresolvedAddress unresolvedAddress = unresolvedAddressRepository.findByAddress(address)
+                .orElseGet(() -> UnresolvedAddress.builder()
+                        .address(address)
+                        .attempts(0)
+                        .createdAt(now)
+                        .build());
+
+        unresolvedAddress.setDate(incident.getDate());
+        unresolvedAddress.setTime(incident.getTime());
+        unresolvedAddress.setIncidentType(incident.getIncidentType());
+        unresolvedAddress.setDuration(incident.getDuration());
+        unresolvedAddress.setMarkerIcon(incident.getMarkerIcon());
+        unresolvedAddress.setStatus(incident.getStatus());
+        unresolvedAddress.setResources(String.join("|", resourceNames));
+        unresolvedAddress.setLastAttemptAt(now);
+        if (unresolvedAddress.getAttempts() == null) {
+            unresolvedAddress.setAttempts(0);
+        }
+        if (unresolvedAddress.getCreatedAt() == null) {
+            unresolvedAddress.setCreatedAt(now);
+        }
+
+        unresolvedAddressRepository.save(unresolvedAddress);
+    }
+
+    // Máximo de reintentos automáticos antes de dejar de llamar a la API gratuita
+    // de geocoding para una dirección: evita gastar cuota indefinidamente en
+    // direcciones que probablemente nunca sean reales (pruebas de radio, erratas, etc.)
+    private static final int MAX_RETRY_ATTEMPTS = 30;
+
+    public int retryUnresolvedAddresses() {
+        List<UnresolvedAddress> pending = unresolvedAddressRepository.findPendingRetries(MAX_RETRY_ATTEMPTS);
+        int recovered = 0;
+
+        for (UnresolvedAddress pendingAddress : pending) {
+            // Registros antiguos (previos a este cambio) que solo tienen la dirección:
+            // no hay datos suficientes para reconstruir el incidente, los dejamos estar.
+            if (pendingAddress.getDate() == null || pendingAddress.getTime() == null
+                    || pendingAddress.getIncidentType() == null) {
+                continue;
+            }
+
+            // Si mientras tanto ese mismo incidente ya se resolvió por la vía normal
+            // (p.ej. se volvió a recibir en el parte de otro día), no lo dupliquemos.
+            Optional<Incident> alreadyExists = incidentService.getIncidentByDateAndTime(
+                    pendingAddress.getDate(), pendingAddress.getTime(), pendingAddress.getIncidentType());
+            if (alreadyExists.isPresent()) {
+                unresolvedAddressRepository.delete(pendingAddress);
+                continue;
+            }
+
+            String coordinatesJsonResponse = geocodingService.getcoordinates(pendingAddress.getAddress());
+            CoordinatesAndAddress coordinatesAndAddress = getCoordinatesFromJson(coordinatesJsonResponse);
+
+            pendingAddress.setAttempts(pendingAddress.getAttempts() == null ? 1 : pendingAddress.getAttempts() + 1);
+            pendingAddress.setLastAttemptAt(LocalDateTime.now());
+
+            if (!isAddresValid(coordinatesAndAddress)) {
+                unresolvedAddressRepository.save(pendingAddress);
+                continue;
+            }
+
+            if (incidentService.getIncidentByDateAndCoordinates(
+                    pendingAddress.getDate(),
+                    coordinatesAndAddress.getCoordinates().get(0),
+                    coordinatesAndAddress.getCoordinates().get(1)).isPresent()) {
+                coordinatesAndAddress = adjustCoordinates(coordinatesAndAddress);
+            }
+
+            Incident incident = Incident.builder()
+                    .date(pendingAddress.getDate())
+                    .time(pendingAddress.getTime())
+                    .status(pendingAddress.getStatus())
+                    .incidentType(pendingAddress.getIncidentType())
+                    .markerIcon(pendingAddress.getMarkerIcon())
+                    .duration(pendingAddress.getDuration())
+                    .latitude(coordinatesAndAddress.getCoordinates().get(0))
+                    .longitude(coordinatesAndAddress.getCoordinates().get(1))
+                    .address(coordinatesAndAddress.getAddress())
+                    .build();
+
+            List<String> resourceNames = pendingAddress.getResources() == null || pendingAddress.getResources().isEmpty()
+                    ? new ArrayList<>()
+                    : Arrays.asList(pendingAddress.getResources().split("\\|"));
+            List<Resource> resourceList = buildResourceList(resourceNames);
+
+            incidentService.saveIncident(incident);
+            incidentResourceService.addResourceToIncident(incident, resourceList);
+            incident.setIncidentResources(incidentResourceService.findIncidentResourceByIncident(incident));
+            incidentService.saveIncident(incident);
+
+            unresolvedAddressRepository.delete(pendingAddress);
+            recovered++;
+        }
+
+        return recovered;
     }
 
 
