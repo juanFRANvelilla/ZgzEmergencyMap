@@ -119,9 +119,8 @@ public class JsonConverterServiceImpl implements JsonConverterService {
         String duration = node.path("duracion").asText();
         incident.setDuration(duration);
 
-        // Recogemos los recursos ANTES de intentar geocodificar para no perderlos
-        // si la dirección falla: los necesitamos también para reconstruir el
-        // incidente completo en el reintento posterior.
+        // Recogemos los recursos (solo se usan si el geocoding tiene éxito; si la
+        // dirección no se resuelve, se descartan y no se guardan en unresolved_address)
         List<String> resourceNames = new ArrayList<>();
         JsonNode resourcesNode = node.path("recursos");
         for (JsonNode resourceNode : resourcesNode) {
@@ -138,7 +137,7 @@ public class JsonConverterServiceImpl implements JsonConverterService {
             // apareciendo como abierto/cerrado "hoy" en el parte de bomberos, el
             // propio ScheduledTask (cada 30 min) volverá a llamar a este método para
             // la misma fecha/hora/tipo y reintentará el geocoding desde cero.
-            saveOrUpdateUnresolvedAddress(address, incident, resourceNames);
+            saveOrUpdateUnresolvedAddress(address);
             return null; // Todavía no es válida: no lo guardamos como Incident hoy
         }
         // Guardar las nuevas coordenadas en el set general para evitar tener 2 incidentes con las mismas coordenadas
@@ -185,25 +184,16 @@ public class JsonConverterServiceImpl implements JsonConverterService {
         return resourceList;
     }
 
-    private void saveOrUpdateUnresolvedAddress(String address, Incident incident, List<String> resourceNames) {
-        LocalDateTime now = LocalDateTime.now();
+    private void saveOrUpdateUnresolvedAddress(String address) {
         UnresolvedAddress unresolvedAddress = unresolvedAddressRepository.findByAddress(address)
                 .orElseGet(() -> UnresolvedAddress.builder()
                         .address(address)
-                        .createdAt(now)
+                        .attempts(0)
                         .build());
 
-        unresolvedAddress.setDate(incident.getDate());
-        unresolvedAddress.setTime(incident.getTime());
-        unresolvedAddress.setIncidentType(incident.getIncidentType());
-        unresolvedAddress.setDuration(incident.getDuration());
-        unresolvedAddress.setMarkerIcon(incident.getMarkerIcon());
-        unresolvedAddress.setStatus(incident.getStatus());
-        unresolvedAddress.setResources(String.join("|", resourceNames));
-        unresolvedAddress.setLastAttemptAt(now);
-        if (unresolvedAddress.getCreatedAt() == null) {
-            unresolvedAddress.setCreatedAt(now);
-        }
+        unresolvedAddress.setNormalizedAddress(geocodingService.normalizeAddressForTest(address));
+        unresolvedAddress.setAttempts(unresolvedAddress.getAttempts() + 1);
+        unresolvedAddress.setLastAttemptAt(LocalDateTime.now());
 
         unresolvedAddressRepository.save(unresolvedAddress);
     }
