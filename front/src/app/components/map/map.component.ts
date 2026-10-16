@@ -1,21 +1,33 @@
-import { Component, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
 import OSM from 'ol/source/OSM';
 import XYZ from 'ol/source/XYZ';
-import { fromLonLat } from 'ol/proj';
+import { fromLonLat, toLonLat } from 'ol/proj';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
-import { Style, Icon } from 'ol/style';
+import Polygon from 'ol/geom/Polygon';
+import Draw from 'ol/interaction/Draw';
+import { Style, Icon, Stroke, Fill } from 'ol/style';
 import Overlay from 'ol/Overlay';
 import { IncidentService } from '../../services/incident.service';
 import { IncidentModel, MarkerIcon } from '../../models/incident.model';
 import { MAP_STYLES, MapStyleType } from '../../constants/map-styles';
+
+interface PolygonIncident {
+  incident: IncidentModel;
+  visible: boolean;
+}
+
+const POLYGON_PANEL_LEFT = 60;
+const POLYGON_PANEL_WIDTH = 340;
+const MOBILE_BREAKPOINT = 900;
 
 @Component({
   selector: 'app-map',
@@ -27,7 +39,17 @@ import { MAP_STYLES, MapStyleType } from '../../constants/map-styles';
 export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   map!: Map;
   vectorLayer!: VectorLayer<VectorSource>;
+  polygonLayer!: VectorLayer<VectorSource>;
   popup!: Overlay;
+  popupIncident: IncidentModel | null = null;
+
+  drawPolygon: Draw | null = null;
+  isPolygonMode: boolean = false;
+  loadingPolygonIncidents: boolean = false;
+  polygonError: string = '';
+  polygonIncidents: PolygonIncident[] = [];
+  private polygonSubscription?: Subscription;
+  private suppressMapClick: boolean = false;
   
   fullIncidentList: IncidentModel[] = [];
   filteredIncidents: IncidentModel[] = [];
@@ -72,8 +94,16 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.polygonSubscription?.unsubscribe();
     if (this.map) {
       this.map.setTarget(undefined);
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.drawPolygon) {
+      this.stopDrawPolygon();
     }
   }
 
@@ -112,6 +142,15 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       source: new VectorSource()
     });
 
+    // Capa para el polígono dibujado por el usuario (por debajo de los marcadores)
+    this.polygonLayer = new VectorLayer({
+      source: new VectorSource(),
+      style: new Style({
+        stroke: new Stroke({ color: 'rgba(0, 145, 194, 1)', width: 2 }),
+        fill: new Fill({ color: 'rgba(0, 145, 194, 0.12)' })
+      })
+    });
+
     // Crear el mapa
     this.map = new Map({
       target: 'map',
@@ -121,6 +160,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
             attributions: []
           })
         }),
+        this.polygonLayer,
         this.vectorLayer
       ],
       view: new View({
@@ -144,7 +184,13 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       // Contraer menú de capas al pulsar en el mapa
       this.showLayerMenu = false;
 
-      const feature = this.map.forEachFeatureAtPixel(event.pixel, (feat) => feat);
+      if (this.drawPolygon || this.suppressMapClick) {
+        return;
+      }
+
+      const feature = this.map.forEachFeatureAtPixel(event.pixel, (feat) => feat, {
+        layerFilter: (layer) => layer === this.vectorLayer
+      });
       if (feature && this.popup) {
         const coordinates = (feature.getGeometry() as Point).getCoordinates();
         const incident = feature.get('incident') as IncidentModel;
@@ -162,8 +208,14 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Cambiar cursor cuando pasa sobre un marcador
     this.map.on('pointermove', (event) => {
+      if (this.drawPolygon) {
+        this.map.getTargetElement().style.cursor = 'crosshair';
+        return;
+      }
       const pixel = this.map.getEventPixel(event.originalEvent);
-      const hit = this.map.hasFeatureAtPixel(pixel);
+      const hit = this.map.hasFeatureAtPixel(pixel, {
+        layerFilter: (layer) => layer === this.vectorLayer
+      });
       this.map.getTargetElement().style.cursor = hit ? 'pointer' : '';
     });
   }
@@ -183,6 +235,9 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   onDateChange(): void {
     this.hidePopup();
     this.showLayerMenu = false;
+    if (this.isPolygonMode) {
+      this.clearPolygon(false);
+    }
 
     if (this.isCurrentDate(this.selectedDate)) {
       this.loadTodayIncidents();
@@ -250,8 +305,138 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onToggleOpenIncidents(): void {
     this.hidePopup();
+    if (this.isPolygonMode) {
+      this.clearPolygon(false);
+    }
     this.currentIncidents = this.showOnlyOpen ? this.filteredIncidents : this.fullIncidentList;
     this.updateMap(true);
+  }
+
+  toggleDrawPolygon(): void {
+    if (this.drawPolygon) {
+      this.stopDrawPolygon();
+      return;
+    }
+
+    this.hidePopup();
+    this.showLayerMenu = false;
+
+    const polygonSource = this.polygonLayer.getSource()!;
+    this.drawPolygon = new Draw({
+      source: polygonSource,
+      type: 'Polygon'
+    });
+
+    // Solo se permite un polígono: al empezar uno nuevo se borra el anterior
+    this.drawPolygon.on('drawstart', () => polygonSource.clear());
+    this.drawPolygon.on('drawend', (event) => {
+      const polygon = event.feature.getGeometry() as Polygon;
+      this.stopDrawPolygon();
+      // El click que cierra el polígono no debe abrir el popup de un marcador
+      this.suppressMapClick = true;
+      setTimeout(() => this.suppressMapClick = false, 300);
+      this.searchIncidentsInPolygon(polygon);
+    });
+
+    this.map.addInteraction(this.drawPolygon);
+  }
+
+  stopDrawPolygon(): void {
+    if (this.drawPolygon) {
+      this.map.removeInteraction(this.drawPolygon);
+      this.drawPolygon = null;
+      this.map.getTargetElement().style.cursor = '';
+    }
+  }
+
+  searchIncidentsInPolygon(polygon: Polygon): void {
+    this.hidePopup();
+    this.isPolygonMode = true;
+    this.loadingPolygonIncidents = true;
+    this.polygonError = '';
+    this.polygonIncidents = [];
+    this.updateMap(false);
+    this.fitToPolygon(polygon);
+
+    const coordinates = polygon.getCoordinates()[0].map(coordinate => toLonLat(coordinate));
+
+    this.polygonSubscription?.unsubscribe();
+    this.polygonSubscription = this.incidentService.getIncidentsByPolygon(coordinates).subscribe({
+      next: (incidents) => {
+        this.polygonIncidents = incidents.map(incident => ({ incident, visible: true }));
+        this.loadingPolygonIncidents = false;
+        this.updateMap(false);
+      },
+      error: (error) => {
+        console.error('Error loading incidents by polygon:', error);
+        this.loadingPolygonIncidents = false;
+        this.polygonError = 'No se han podido obtener las incidencias de esta zona';
+      }
+    });
+  }
+
+  fitToPolygon(polygon: Polygon): void {
+    const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
+    // Dejar hueco para el panel de la lista (a la izquierda en escritorio, abajo en móvil)
+    // y para la franja inferior de #map que queda fuera de pantalla bajo la cabecera
+    const padding = isMobile
+      ? [60, 30, Math.round(window.innerHeight * 0.4) + 150, 30]
+      : [60, 60, 130, POLYGON_PANEL_LEFT + POLYGON_PANEL_WIDTH + 30];
+
+    this.map.getView().fit(polygon.getExtent(), {
+      padding,
+      maxZoom: 17,
+      duration: 400
+    });
+  }
+
+  /** `redraw = false` cuando quien llama ya va a repintar el mapa con los incidentes del día. */
+  clearPolygon(redraw: boolean = true): void {
+    this.stopDrawPolygon();
+    this.polygonSubscription?.unsubscribe();
+    this.polygonLayer.getSource()?.clear();
+    this.isPolygonMode = false;
+    this.loadingPolygonIncidents = false;
+    this.polygonError = '';
+    this.polygonIncidents = [];
+    this.hidePopup();
+    if (redraw) {
+      this.updateMap(true);
+    }
+  }
+
+  get allPolygonIncidentsVisible(): boolean {
+    return this.polygonIncidents.length > 0 && this.polygonIncidents.every(item => item.visible);
+  }
+
+  setAllPolygonIncidentsVisible(visible: boolean): void {
+    this.polygonIncidents.forEach(item => item.visible = visible);
+    if (!visible) {
+      this.hidePopup();
+    }
+    this.updateMap(false);
+  }
+
+  setPolygonIncidentVisible(item: PolygonIncident, visible: boolean): void {
+    item.visible = visible;
+    if (!visible && this.popupIncident === item.incident) {
+      this.hidePopup();
+    }
+    this.updateMap(false);
+  }
+
+  showPolygonIncidentInfo(item: PolygonIncident): void {
+    if (!item.visible) {
+      item.visible = true;
+      this.updateMap(false);
+    }
+
+    const coordinates = fromLonLat([item.incident.longitude, item.incident.latitude]);
+    this.showPopup(coordinates, item.incident);
+    this.map.getView().animate({
+      center: coordinates,
+      duration: 500
+    });
   }
 
   toggleLayerMenu(): void {
@@ -299,7 +484,12 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
     source.clear();
 
-    this.currentIncidents.forEach(incident => {
+    // En modo polígono solo se pintan las incidencias de la zona marcadas como visibles
+    const incidentsToRender = this.isPolygonMode
+      ? this.polygonIncidents.filter(item => item.visible).map(item => item.incident)
+      : this.currentIncidents;
+
+    incidentsToRender.forEach(incident => {
       const feature = new Feature({
         geometry: new Point(fromLonLat([incident.longitude, incident.latitude]))
       });
@@ -320,8 +510,8 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       source.addFeature(feature);
     });
 
-    // Ajustar vista para mostrar todos los marcadores
-    if (fitView && this.currentIncidents.length > 0) {
+    // Ajustar vista para mostrar todos los marcadores (en modo polígono manda el zoom al polígono)
+    if (fitView && !this.isPolygonMode && incidentsToRender.length > 0) {
       const extent = source.getExtent();
       this.map.getView().fit(extent, {
         padding: [50, 50, 50, 50],
@@ -370,6 +560,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
         <div class="incident-info">
           <h4>${incident.incidentType}</h4>
           <p><strong>Dirección:</strong> ${incident.address}</p>
+          ${this.isPolygonMode ? `<p><strong>Fecha:</strong> ${this.formatIncidentDate(incident.date)}</p>` : ''}
           <p><strong>Inicio:</strong> ${incident.time}</p>
           ${incident.status === 'CLOSED' && incident.duration ? `<p><strong>Duración:</strong> ${incident.duration}</p>` : ''}
           ${incident.resources && incident.resources.length > 0 ? `
@@ -382,13 +573,21 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       `;
     }
 
+    this.popupIncident = incident;
     this.popup.setPosition(coordinates);
   }
 
   hidePopup(): void {
+    this.popupIncident = null;
     if (this.popup) {
       this.popup.setPosition(undefined);
     }
+  }
+
+  /** 'yyyy-MM-dd' -> 'dd/MM/yyyy' */
+  formatIncidentDate(date: string): string {
+    const [year, month, day] = date.split('-');
+    return `${day}/${month}/${year}`;
   }
 
   isCurrentDate(dateString: string): boolean {

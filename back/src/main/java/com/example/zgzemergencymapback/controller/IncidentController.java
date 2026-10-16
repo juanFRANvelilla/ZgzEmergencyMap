@@ -1,5 +1,6 @@
 package com.example.zgzemergencymapback.controller;
 
+import com.example.zgzemergencymapback.request.PolygonRequestDTO;
 import com.example.zgzemergencymapback.response.IncidentResponseDTO;
 import com.example.zgzemergencymapback.service.IncidentResourceService;
 import com.example.zgzemergencymapback.service.IncidentService;
@@ -8,6 +9,8 @@ import com.example.zgzemergencymapback.service.impl.ResourceServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.query.Param;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -41,6 +44,15 @@ public class IncidentController {
     @GetMapping("/getIncidentByDate")
     public IncidentResponseDTO getIncidentByDate(@Param("date") String date) {
         return incidentService.getIncidentByDate(date);
+    }
+
+    /*
+     * Método que devuelve todas las incidencias (de cualquier fecha) situadas dentro
+     * del polígono recibido, ordenadas de más reciente a menos reciente
+     */
+    @PostMapping("/getIncidentByPolygon")
+    public IncidentResponseDTO getIncidentByPolygon(@RequestBody PolygonRequestDTO request) {
+        return incidentService.getIncidentByPolygon(request.getCoordinates());
     }
 
 }

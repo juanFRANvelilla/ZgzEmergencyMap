@@ -26,6 +26,13 @@ public interface IncidentRepository extends JpaRepository<Incident, UUID> {
     @Query("SELECT i FROM Incident i WHERE i.date = :date")
     List<Incident> findIncidentByDate(@Param("date") LocalDate date);
 
+    @Query("SELECT i FROM Incident i " +
+            "WHERE i.latitude BETWEEN :minLat AND :maxLat " +
+            "AND i.longitude BETWEEN :minLon AND :maxLon " +
+            "ORDER BY i.date DESC, i.time DESC")
+    List<Incident> findIncidentInBoundingBox(@Param("minLat") Double minLat, @Param("maxLat") Double maxLat,
+                                             @Param("minLon") Double minLon, @Param("maxLon") Double maxLon);
+
     @Modifying
     @Transactional
     @Query("UPDATE Incident i SET i.status = 1 WHERE i.status = 0")

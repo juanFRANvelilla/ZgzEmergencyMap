@@ -7,8 +7,12 @@ import com.example.zgzemergencymapback.service.IncidentService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.awt.geom.Path2D;
+import java.awt.geom.Rectangle2D;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -56,6 +60,41 @@ public class IncidentServiceImpl implements IncidentService {
         return IncidentResponseDTO
                 .builder()
                 .date(date.format(formatter))
+                .size(incidentList.size())
+                .incidentList(incidentList)
+                .build();
+    }
+
+
+    /*
+     * Método que obtiene todas las incidencias situadas dentro de un polígono,
+     * ordenadas de más reciente a menos reciente. Primero se filtra en BD por el
+     * rectángulo que envuelve al polígono y después se descartan en memoria las
+     * que caen dentro del rectángulo pero fuera del polígono real.
+     */
+    public IncidentResponseDTO getIncidentByPolygon(List<List<Double>> coordinates) {
+        if (coordinates == null || coordinates.size() < 3
+                || coordinates.stream().anyMatch(point -> point == null || point.size() < 2)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "El polígono debe tener al menos 3 vértices con formato [longitud, latitud]");
+        }
+
+        Path2D.Double polygon = new Path2D.Double();
+        polygon.moveTo(coordinates.get(0).get(0), coordinates.get(0).get(1));
+        for (int i = 1; i < coordinates.size(); i++) {
+            polygon.lineTo(coordinates.get(i).get(0), coordinates.get(i).get(1));
+        }
+        polygon.closePath();
+
+        Rectangle2D bounds = polygon.getBounds2D();
+        List<Incident> incidentList = incidentRepository.findIncidentInBoundingBox(
+                        bounds.getMinY(), bounds.getMaxY(), bounds.getMinX(), bounds.getMaxX())
+                .stream()
+                .filter(incident -> polygon.contains(incident.getLongitude(), incident.getLatitude()))
+                .toList();
+
+        return IncidentResponseDTO
+                .builder()
                 .size(incidentList.size())
                 .incidentList(incidentList)
                 .build();

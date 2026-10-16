@@ -18,6 +18,8 @@ public interface IncidentService {
 
     IncidentResponseDTO getTodayIncidentData();
 
+    IncidentResponseDTO getIncidentByPolygon(List<List<Double>> coordinates);
+
     void saveIncident(Incident incident);
 
     @Transactional

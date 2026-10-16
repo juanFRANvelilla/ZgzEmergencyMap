@@ -24,5 +24,12 @@ export class IncidentService {
       map(response => response.incidentList.map(incident => new IncidentModel(incident)))
     );
   }
+
+  /** `coordinates`: vértices del polígono como [longitud, latitud]. */
+  getIncidentsByPolygon(coordinates: number[][]): Observable<IncidentModel[]> {
+    return this.http.post<IncidentListResponse>(`${this.apiUrl}/getIncidentByPolygon`, { coordinates }).pipe(
+      map(response => response.incidentList.map(incident => new IncidentModel(incident)))
+    );
+  }
 }
 
