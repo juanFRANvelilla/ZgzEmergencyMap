@@ -1,5 +1,7 @@
 # ZGZ Emergency Map — Backend
 
+Despliegue CI: Tekton (`universal-monorepo`) en push a `main`.
+
 ## Requisitos
 
 - **Java 17**

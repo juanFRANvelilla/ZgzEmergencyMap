@@ -1,5 +1,7 @@
 # ZGZ Emergency Map — Frontend
 
+Despliegue CI: Tekton (`universal-monorepo`) en push a `main`.
+
 ## Requisitos
 
 - **Node.js** 18 o superior  
