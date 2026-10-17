@@ -1,0 +1,40 @@
+apiVersion: platform.delicias/v1alpha2
+kind: Application
+metadata:
+  name: zgzemergencymap
+spec:
+  owner: user:danielbeltejar
+  repository: https://github.com/juanFRANvelilla/ZgzEmergencyMap
+  defaultBranch: main
+  components:
+    - name: front
+      build:
+        context: front
+        dockerfile: front/Dockerfile
+      deploy:
+        kind: service
+        containerPort: 8080
+        servicePort: 80
+        healthPath: /healthz
+    - name: back
+      build:
+        context: back
+        dockerfile: back/Dockerfile
+      deploy:
+        kind: service
+        containerPort: 8080
+        servicePort: 8080
+        healthPort: 8080
+        healthPath: /actuator/health/readiness
+  environments:
+    pre:
+      automatic: true
+    pro:
+      automatic: false
+  promotion:
+    strategy: pull-request
+    from: pre
+    to: pro
+  artifacts:
+    registry: harbor.server.local/danielbeltejar/zgzemergencymap
+    imageReference: digest

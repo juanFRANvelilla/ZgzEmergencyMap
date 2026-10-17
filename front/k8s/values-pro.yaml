@@ -32,13 +32,14 @@ volumeMounts:
   mountPath: /var/lib/nginx/tmp
 - name: tmpfs-run-nginx
   mountPath: /run/nginx
-ingress:
+gatewayRoute:
   enabled: true
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-juanfran
-    ingress.kubernetes.io/force-ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/proxy-set-header: X-Real-IP $remote_addr
-    nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
-  class: "nginx-online"
   host: "zgz-emergency-map.juanfranciscoperez.es"
-  tls: true
+  additionalHosts: []
+  path: "/"
+
+gateway:
+  enabled: true
+  name: cilium-public
+  namespace: gateway-system
+  sectionName: https-zgz-emergency-map
