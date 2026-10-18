@@ -1,3 +1,4 @@
+
 # Etapa 1: Build de la aplicación con Maven
 FROM maven:3.9-eclipse-temurin-17-alpine AS build
 
@@ -20,6 +21,9 @@ FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 
+# Mantener actualizado libexpat en la imagen runtime
+RUN apk upgrade --no-cache libexpat
+
 # Crear usuario no-root para seguridad
 RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
@@ -33,9 +37,3 @@ EXPOSE 8080
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
-
-# Variables de entorno por defecto
-ENV JAVA_OPTS="-Xmx512m -Xms256m"
-
-# Comando para ejecutar la aplicación
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
